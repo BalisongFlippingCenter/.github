@@ -11,7 +11,7 @@ This organization hosts the active development of the platform, rebuilt and impr
 | Repo | Description | Stack |
 |---|---|---|
 | [BalisongFlippingCenterServer](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterServer) | REST API backend — auth, media, community features | Java · Spring Boot · MongoDB · AWS |
-| [BalisongFlippingHubWeb](https://github.com/BalisongFlippingCenter/BalisongFlippingHubWeb) | Frontend web application | React · TypeScript |
+| [BalisongFlippingCenterWeb](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterWeb) | Frontend web application | React · TypeScript |
 
 ---
 
