@@ -1,6 +1,6 @@
 # 🗡 BalisongFlippingCenter
 
-**BalisongFlippingCenter** is a full-stack community platform for balisong knife enthusiasts — a place to share flipping content, catalog knife collections, look up knife specs, discover new tricks, and connect with other flippers. It ships with **Latch**, an AI assistant that answers questions about the site and its knives using live data from the platform's own API.
+**BalisongFlippingCenter** is a full-stack community platform for balisong knife enthusiasts — a place to share flipping content, catalog knife collections, look up knife specs, discover new tricks, and connect with other flippers. It ships with **Latch**, an AI assistant that answers questions about the site and its knives using live data from the platform's own API — on the site, and in any Discord server through the public **Balisong Bot**.
 
 🌐 Live at [balisongflippingcenter.com](https://www.balisongflippingcenter.com)
 
@@ -15,6 +15,7 @@ This organization hosts the active development of the platform, rebuilt and impr
 | [BalisongFlippingCenterServer](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterServer) | REST API backend — auth, posts, collections, knife catalog, messaging, moderation | Java · Spring Boot · PostgreSQL · AWS |
 | [BalisongFlippingCenterWeb](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterWeb) | Frontend web application, including the Latch chat widget | React · TypeScript |
 | [BalisongFlippingCenterAIPython](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterAIPython) | **Latch** — the AI assistant microservice | Python · FastAPI · Claude on AWS Bedrock · Redis |
+| [BalisongFlippingCenterDiscordBot](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterDiscordBot) | **Balisong Bot** — public Discord bot: Latch, catalog lookups, combos, dares, and games | Node.js · discord.js · Docker |
 | [BalisongFlippingCenterTerraformProd](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterTerraformProd) | Infrastructure as code for the production AWS environment | Terraform · AWS |
 
 ---
@@ -28,11 +29,12 @@ This organization hosts the active development of the platform, rebuilt and impr
                          │   /api/* → Spring Boot API   │
                          └──────────────┬──────────────┘
                                         │
-                         ┌──────────────▼──────────────┐       ┌──────────────┐
-                         │  Spring Boot REST API (EC2)  │ ────▶ │ PostgreSQL 16│
-                         │  JWT auth · STOMP WebSocket  │       │ (Flyway)     │
-                         └──────┬───────────────┬──────┘       └──────────────┘
-                                │               │
+  ┌──────────────────┐   ┌──────────────▼──────────────┐       ┌──────────────┐
+  │ Discord bot      │──▶│  Spring Boot REST API (EC2)  │ ────▶ │ PostgreSQL 16│
+  │ (same EC2,       │   │  JWT auth · STOMP WebSocket  │       │ (Flyway)     │
+  │  own container)  │   └──────┬───────────────┬──────┘       └──────────────┘
+  └────────▲─────────┘          │               │
+        Discord                 │               │
                          ┌──────▼─────┐  ┌──────▼──────────────────┐
                          │   AWS S3   │  │  Latch AI service (EC2)  │ ────▶ Claude
                          │   media    │  │  FastAPI · Redis history │      (AWS Bedrock)
@@ -53,8 +55,21 @@ Latch is a streaming chat assistant built into the site. Ask it about a knife, a
 - **Token-by-token streaming** from Bedrock's Converse API, through the Spring Boot relay, to the browser.
 - **Conversation memory** in Redis, trimmed to recent turns with old tool results compacted to keep input tokens bounded.
 - **Prompt caching** on the static system prompt and tool definitions (~4,300 tokens served from cache per request).
-- **Eval harness** — 29 scenario cases run against the real model and graded by deterministic checks plus an LLM judge. Eval-driven fixes took the pass rate from **62% to 92%**.
+- **Eval harness** — scenario cases for both the website and Discord personas, run against the real model and graded by deterministic checks plus an LLM judge. Eval-driven fixes took the pass rate from **62% to 92%**.
+- **Two clients, one service** — the website and the Discord bot each authenticate with their own client key; the client picks the persona and tool set, so Discord gets a general balisong expert with catalog tools plus web search, and none of the site-only tools.
 - **Layered security** — the backend validates per-client credentials and rate-limits each session before relaying; the AI service only accepts traffic carrying a shared internal secret.
+
+---
+
+## 🎮 Balisong Bot — Latch on Discord
+
+A public Discord bot any server can add: **[invite it](https://discord.com/oauth2/authorize?client_id=1511180293107617853&permissions=309237762048&scope=bot%20applications.commands)** · [repo](https://github.com/BalisongFlippingCenter/BalisongFlippingCenterDiscordBot)
+
+- **Ask Latch** with `/latch` or an @mention — answers stream into a thread with per-thread conversation memory.
+- **Catalog tools** — knife and maker lookups, side-by-side comparisons, and filtered recommendations from the BFC catalog.
+- **Challenges and games** — level-based combo generation from a curated trick list, video-proof landings, dares between users, a daily trick, a timed catalog quiz with a leaderboard, and B.A.L.I. (H.O.R.S.E. for flipping).
+- **Built to scale safely** — no privileged intents, replies that can't mass-ping, and per-server and global caps on AI usage as a cost ceiling.
+- **Zero added hosting cost** — runs as its own container on the existing backend instance, deployed by GitHub Actions over OIDC → ECR → SSM.
 
 ---
 
@@ -65,6 +80,8 @@ Latch is a streaming chat assistant built into the site. Ask it about a knife, a
 **Frontend:** React · TypeScript · Vitest
 
 **AI service:** Python 3.13 · FastAPI · Claude (Haiku 4.5) on AWS Bedrock · Redis · pytest
+
+**Discord bot:** Node.js 22 · discord.js v14 (Components V2, modals, threads) · Docker
 
 **Infrastructure:** AWS (EC2, S3, CloudFront, Route 53, ECR, SSM, Bedrock) · Terraform · GitHub Actions with OIDC
 
